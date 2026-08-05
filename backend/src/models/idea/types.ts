@@ -24,6 +24,12 @@ export interface IIdea extends Document {
   owner: Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
+
+  isOwnedBy(userId: string): boolean;
+  publish(): Promise<IIdea>;
+  archive(): Promise<IIdea>;
+  addTag(tag: string): Promise<IIdea>;
+  removeTag(tag: string): Promise<IIdea>;
 }
 
 export interface IIdeaModel extends Model<IIdea> {

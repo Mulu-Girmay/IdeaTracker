@@ -1,6 +1,7 @@
 import mongoose, { Schema } from "mongoose";
 import { IIdea, IIdeaModel, IdeaStatus, IdeaCategory } from "./types.js";
 import ideaStatics from "./statics.js";
+import ideaMethods from "./method.js";
 
 const IdeaSchema = new Schema<IIdea>(
   {
@@ -51,6 +52,7 @@ IdeaSchema.index({ tags: 1 });
 IdeaSchema.index({ title: "text", description: "text" });
 
 IdeaSchema.statics = { ...IdeaSchema.statics, ...ideaStatics } as any;
+IdeaSchema.methods = { ...IdeaSchema.methods, ...ideaMethods } as any;
 
 const Idea = mongoose.model<IIdea, IIdeaModel>("Idea", IdeaSchema);
 

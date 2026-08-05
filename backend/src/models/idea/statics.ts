@@ -1,5 +1,5 @@
 import { IIdea, IIdeaModel, CreateIdeaData, UpdateIdeaData } from "./types.js";
-import { NotFoundError, ForbiddenError } from "../../error/ApiError.js";
+import { NotFoundError } from "../../error/ApiError.js";
 
 export const createIdea = async function (
   this: IIdeaModel,
@@ -22,10 +22,19 @@ export const getIdeas = async function (
   page: number = 1,
   limit: number = 10,
   filter: Record<string, any> = {},
-): Promise<{ ideas: IIdea[]; total: number; page: number; totalPages: number }> {
+): Promise<{
+  ideas: IIdea[];
+  total: number;
+  page: number;
+  totalPages: number;
+}> {
   const skip = (page - 1) * limit;
   const [ideas, total] = await Promise.all([
-    this.find(filter).skip(skip).limit(limit).sort({ createdAt: -1 }).populate("owner", "name email"),
+    this.find(filter)
+      .skip(skip)
+      .limit(limit)
+      .sort({ createdAt: -1 })
+      .populate("owner", "name email"),
     this.countDocuments(filter),
   ]);
   return { ideas, total, page, totalPages: Math.ceil(total / limit) };
