@@ -30,13 +30,12 @@ const gracefulShutdown = (reason: string): void => {
 
     setTimeout(() => {
       logger.error("Force exit after timeout");
-      process.exit(1);
+      process.exit(1); //Prevents infinite hang
     }, 5000);
   } else {
     process.exit(1);
   }
 };
-
 const setupExceptionHandlers = (): void => {
   process.on("uncaughtException", (error: Error) => {
     logError("Uncaught Exception", error, {
@@ -44,7 +43,7 @@ const setupExceptionHandlers = (): void => {
       uptime: process.uptime(),
       memory: process.memoryUsage(),
     });
-    gracefulShutdown("Uncaught Exception");
+    gracefulShutdown("Uncaught Exception"); //Handle UNEXPECTED crashes
   });
 
   process.on("unhandledRejection", (reason: any) => {
@@ -75,3 +74,28 @@ const setupExceptionHandlers = (): void => {
 };
 
 export { setupExceptionHandlers, logError, gracefulShutdown };
+
+// import express from "express";
+// import { setupExceptionHandlers } from "./utils/exceptionHandlers.js";
+
+// setupExceptionHandlers(); //  CRITICAL - Called FIRST!
+
+// const app = express();
+
+// app.get("/crash", () => {
+//   throw new Error("BOOM!"); // Still crashes BUT...
+// });
+
+// app.listen(3000);
+// What happens:
+
+// User visits /crash
+
+// Error is thrown
+
+// Handler catches it
+
+// Logs the error
+// Closes server gracefully
+
+// Process exits cleanly

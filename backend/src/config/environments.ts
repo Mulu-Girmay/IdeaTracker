@@ -77,6 +77,7 @@ const envSchema = Joi.object({
 });
 const { error, value: envVars } = envSchema.validate(process.env, {
   abortEarly: false,
+  stripUnknown: true,
 }); //validated returns object with error and value
 
 if (error) {

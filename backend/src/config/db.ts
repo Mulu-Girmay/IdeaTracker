@@ -8,7 +8,7 @@ interface DatabaseConfig {
 
 const connectDB = async (uri: DatabaseConfig) => {
   try {
-    await mongoose.connect(uri.uri);
+    await mongoose.connect(uri.uri, { dbName: uri.dbName });
     logger.info("MongoDB connected successfully");
   } catch (error) {
     logger.error("Mongodb connection error: ", error);
