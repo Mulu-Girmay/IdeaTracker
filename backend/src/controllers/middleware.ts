@@ -54,10 +54,6 @@ export const authenticate = (
   )(req, res, next);
 };
 
-/**
- * Role-based authorization middleware
- * @param roles - Array of allowed roles
- */
 export const authorize =
   (...roles: UserRole[]) =>
   (req: Request, res: Response, next: NextFunction): void => {
@@ -92,12 +88,6 @@ export const authorize =
     next();
   };
 
-/**
- * Check if the authenticated user owns the resource
- * @param model - Mongoose model
- * @param ownerField - Field name that stores the owner ID (default: "owner")
- * @param idParam - Parameter name for the resource ID (default: "id")
- */
 export const checkOwnership = (
   model: any,
   ownerField: string = "owner",
@@ -156,43 +146,13 @@ export const checkOwnership = (
       next();
     } catch (error) {
       logger.error("Error in checkOwnership middleware:", { error });
-      next(new AppError("Error checking resource ownership", { statusCode: 500 }));
+      next(
+        new AppError("Error checking resource ownership", { statusCode: 500 }),
+      );
     }
   };
 };
 
-export const optionalAuthenticate = (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-): void => {
-  passport.authenticate(
-    "jwt",
-    { session: false },
-    (err: Error | null, user: IUser | false, info: any) => {
-      if (err) {
-        logger.error("Optional authentication error:", { error: err.message });
-        // Continue without user
-        return next();
-      }
-
-      if (user && user.isActive !== false) {
-        req.user = user;
-        req.userId = user._id;
-      }
-
-      next();
-    },
-  )(req, res, next);
-};
-
-/**
- * Combined middleware for checking both authentication and specific permissions
- * @param roles - Allowed roles
- * @param checkOwnership - Whether to check ownership
- * @param model - Model for ownership check
- * @param ownerField - Owner field name
- */
 export const requirePermission = (
   roles: UserRole[] = [],
   options: {
@@ -211,9 +171,8 @@ export const requirePermission = (
   ];
 };
 
-export const validateRequest = (
-  validations: ValidationChain[],
-) =>
+export const validateRequest =
+  (validations: ValidationChain[]) =>
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     await Promise.all(validations.map((v) => v.run(req)));
     const errors = validationResult(req);
@@ -221,7 +180,9 @@ export const validateRequest = (
       res.status(400).json({
         success: false,
         message: "Validation failed",
-        details: errors.array().map((e) => ({ field: (e as any).path, message: e.msg })),
+        details: errors
+          .array()
+          .map((e) => ({ field: (e as any).path, message: e.msg })),
       });
       return;
     }
@@ -313,5 +274,3 @@ export const errorHandler = (
     ...(isDevelopment && { details: err }),
   });
 };
-
-
