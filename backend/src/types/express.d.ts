@@ -6,7 +6,7 @@ declare global {
     interface User extends IUser {}
 
     interface Request {
-      userId?: Types.ObjectId;
+      userId?: Types.ObjectId | string;
       resource?: any;
     }
   }

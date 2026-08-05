@@ -4,17 +4,6 @@ import passport from "../config/passport/passport.js";
 import { logger } from "../config/winston.js";
 import { AppError } from "../error/AppError.js";
 import { IUser, UserRole } from "../models/user/types.js";
-import { Types } from "mongoose";
-
-declare global {
-  namespace Express {
-    interface Request {
-      user?: IUser;
-      userId?: Types.ObjectId | string;
-      resource?: any;
-    }
-  }
-}
 
 export const authenticate = (
   req: Request,
@@ -315,33 +304,6 @@ export const errorHandler = (
     return;
   }
 
-  if (err.name === "MulterError") {
-    const messages: Record<string, string> = {
-      LIMIT_FILE_SIZE: "File too large",
-      LIMIT_FILE_COUNT: "Too many files",
-      LIMIT_FIELD_KEY: "Invalid field name",
-      LIMIT_FIELD_VALUE: "Invalid field value",
-      LIMIT_FIELD_COUNT: "Too many fields",
-      LIMIT_PART_COUNT: "Too many parts",
-    };
-    res.status(400).json({
-      success: false,
-      message: messages[err.code] || "File upload error",
-      code: err.code,
-    });
-    return;
-  }
-
-  if (err.name === "RateLimitError") {
-    res.status(429).json({
-      success: false,
-      message: "Too many requests, please try again later",
-      code: "RATE_LIMIT_EXCEEDED",
-      retryAfter: err.retryAfter,
-    });
-    return;
-  }
-
   const isDevelopment = process.env.NODE_ENV === "development";
   res.status(500).json({
     success: false,
@@ -352,61 +314,4 @@ export const errorHandler = (
   });
 };
 
-export const requestLogger = (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-): void => {
-  const startTime = Date.now();
 
-  logger.info(`Incoming request`, {
-    method: req.method,
-    path: req.path,
-    query: req.query,
-    ip: req.ip,
-    userAgent: req.get("user-agent"),
-    userId: req.userId,
-  });
-
-  res.on("finish", () => {
-    const duration = Date.now() - startTime;
-    const statusCode = res.statusCode;
-    const logLevel =
-      statusCode >= 400 ? "error" : statusCode >= 300 ? "warn" : "info";
-
-    logger[logLevel](`Request completed`, {
-      method: req.method,
-      path: req.path,
-      statusCode,
-      duration: `${duration}ms`,
-      userId: req.userId,
-    });
-  });
-
-  next();
-};
-
-export const csrfProtection = (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-): void => {
-  const safeMethods = ["GET", "HEAD", "OPTIONS"];
-  if (safeMethods.includes(req.method)) {
-    return next();
-  }
-
-  const csrfToken = req.headers["x-csrf-token"] || req.body._csrf;
-  const sessionToken = req.session?.csrfToken;
-
-  if (!csrfToken || csrfToken !== sessionToken) {
-    res.status(403).json({
-      success: false,
-      message: "Invalid CSRF token",
-      code: "CSRF_INVALID",
-    });
-    return;
-  }
-
-  next();
-};

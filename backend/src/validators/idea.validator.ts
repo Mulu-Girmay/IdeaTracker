@@ -1,6 +1,9 @@
 import { body, param, query } from "express-validator";
 import { IdeaStatus, IdeaCategory } from "../models/idea/types.js";
 
+const VALID_STATUSES = Object.values(IdeaStatus);
+const VALID_CATEGORIES = Object.values(IdeaCategory);
+
 export const createIdeaValidation = [
   body("title")
     .trim()
@@ -17,20 +20,25 @@ export const createIdeaValidation = [
 
   body("status")
     .optional()
-    .isIn(Object.values(IdeaStatus))
-    .withMessage(`Status must be one of: ${Object.values(IdeaStatus).join(", ")}`),
+    .isIn(VALID_STATUSES)
+    .withMessage(`Status must be one of: ${VALID_STATUSES.join(", ")}`),
 
   body("category")
     .optional()
-    .isIn(Object.values(IdeaCategory))
-    .withMessage(`Category must be one of: ${Object.values(IdeaCategory).join(", ")}`),
+    .isIn(VALID_CATEGORIES)
+    .withMessage(`Category must be one of: ${VALID_CATEGORIES.join(", ")}`),
 
   body("tags")
     .optional()
-    .isArray()
-    .withMessage("Tags must be an array")
-    .custom((tags: any[]) => tags.every((t) => typeof t === "string"))
-    .withMessage("Each tag must be a string"),
+    .isArray({ max: 10 })
+    .withMessage("Tags must be an array with at most 10 items"),
+
+  body("tags.*")
+    .trim()
+    .isString()
+    .withMessage("Each tag must be a string")
+    .isLength({ min: 1, max: 30 })
+    .withMessage("Each tag must be between 1 and 30 characters"),
 ];
 
 export const updateIdeaValidation = [
@@ -50,20 +58,25 @@ export const updateIdeaValidation = [
 
   body("status")
     .optional()
-    .isIn(Object.values(IdeaStatus))
-    .withMessage(`Status must be one of: ${Object.values(IdeaStatus).join(", ")}`),
+    .isIn(VALID_STATUSES)
+    .withMessage(`Status must be one of: ${VALID_STATUSES.join(", ")}`),
 
   body("category")
     .optional()
-    .isIn(Object.values(IdeaCategory))
-    .withMessage(`Category must be one of: ${Object.values(IdeaCategory).join(", ")}`),
+    .isIn(VALID_CATEGORIES)
+    .withMessage(`Category must be one of: ${VALID_CATEGORIES.join(", ")}`),
 
   body("tags")
     .optional()
-    .isArray()
-    .withMessage("Tags must be an array")
-    .custom((tags: any[]) => tags.every((t) => typeof t === "string"))
-    .withMessage("Each tag must be a string"),
+    .isArray({ max: 10 })
+    .withMessage("Tags must be an array with at most 10 items"),
+
+  body("tags.*")
+    .trim()
+    .isString()
+    .withMessage("Each tag must be a string")
+    .isLength({ min: 1, max: 30 })
+    .withMessage("Each tag must be between 1 and 30 characters"),
 ];
 
 export const ideaIdValidation = [
@@ -71,8 +84,31 @@ export const ideaIdValidation = [
 ];
 
 export const getIdeasValidation = [
-  query("page").optional().isInt({ min: 1 }).withMessage("Page must be a positive integer"),
-  query("limit").optional().isInt({ min: 1, max: 100 }).withMessage("Limit must be between 1 and 100"),
-  query("status").optional().isIn(Object.values(IdeaStatus)).withMessage("Invalid status"),
-  query("category").optional().isIn(Object.values(IdeaCategory)).withMessage("Invalid category"),
+  query("page")
+    .optional()
+    .isInt({ min: 1 })
+    .withMessage("Page must be a positive integer")
+    .toInt(),
+
+  query("limit")
+    .optional()
+    .isInt({ min: 1, max: 100 })
+    .withMessage("Limit must be between 1 and 100")
+    .toInt(),
+
+  query("status")
+    .optional()
+    .isIn(VALID_STATUSES)
+    .withMessage(`Status must be one of: ${VALID_STATUSES.join(", ")}`),
+
+  query("category")
+    .optional()
+    .isIn(VALID_CATEGORIES)
+    .withMessage(`Category must be one of: ${VALID_CATEGORIES.join(", ")}`),
+
+  query("search")
+    .optional()
+    .trim()
+    .isLength({ min: 1, max: 100 })
+    .withMessage("Search query must be between 1 and 100 characters"),
 ];

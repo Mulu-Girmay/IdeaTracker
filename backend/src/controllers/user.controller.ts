@@ -159,7 +159,7 @@ export const updateProfile = async (
     if (!userId) throw new UnauthorizedError("User not authenticated");
 
     const updateData: UpdateUserData = { name, email };
-    const user = await User.updateUser(userId, updateData);
+    const user = await User.updateUser(userId as string, updateData);
 
     res.status(200).json({
       success: true,
@@ -183,7 +183,7 @@ export const changePassword = async (
     if (!userId) throw new UnauthorizedError("User not authenticated");
 
     const user = await User.changePassword(
-      userId,
+      userId as string,
       currentPassword,
       newPassword,
     );

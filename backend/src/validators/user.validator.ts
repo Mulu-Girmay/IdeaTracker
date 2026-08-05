@@ -1,4 +1,3 @@
-// validation.ts
 import { body, param, query } from "express-validator";
 import { UserRole } from "../models/user/types.js";
 
