@@ -79,28 +79,28 @@ router.post(
 router.post("/logout", authenticate, userController.logout);
 
 router.get(
-  "/",
+  "/allUsers",
   authenticate,
   authorize(UserRole.ADMIN),
   userController.getAllUsers,
 );
 
 router.get(
-  "/stats",
+  "/userStats",
   authenticate,
   authorize(UserRole.ADMIN),
   userController.getUserStats,
 );
 
 router.get(
-  "/:id",
+  "/viewUser/:id",
   authenticate,
   authorize(UserRole.ADMIN),
   userController.getUserById,
 );
 
 router.put(
-  "/:id",
+  "/editUser:id",
   authenticate,
   authorize(UserRole.ADMIN),
   validateRequest(updateUserValidation),
@@ -108,14 +108,14 @@ router.put(
 );
 
 router.delete(
-  "/:id",
+  "/deleteUser/:id",
   authenticate,
   authorize(UserRole.ADMIN),
   userController.deleteUser,
 );
 
 router.post(
-  "/:id/activate",
+  "/activateUser:id/activate",
   authenticate,
   authorize(UserRole.ADMIN),
   userController.activateUser,

@@ -18,7 +18,7 @@ const router = express.Router();
 router.use(authenticate);
 
 router.post(
-  "/",
+  "/create",
   validateRequest(createIdeaValidation),
   ideaController.createIdea,
 );
@@ -30,25 +30,25 @@ router.get(
 );
 
 router.get(
-  "/:id",
+  "/view/:id",
   validateRequest(ideaIdValidation),
   ideaController.getIdeaById,
 );
 
 router.put(
-  "/:id",
+  "/update/:id",
   validateRequest(updateIdeaValidation),
   ideaController.updateIdea,
 );
 
 router.delete(
-  "/:id",
+  "/delete/:id",
   validateRequest(ideaIdValidation),
   ideaController.deleteIdea,
 );
 
 router.get(
-  "/",
+  "/all",
   authorize(UserRole.ADMIN),
   validateRequest(getIdeasValidation),
   ideaController.getAllIdeas,

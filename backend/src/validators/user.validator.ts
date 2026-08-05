@@ -8,9 +8,22 @@ export const registerValidation = [
     .withMessage("Name is required")
     .isLength({ min: 3, max: 30 })
     .withMessage("Name must be between 3 and 30 characters")
-    .matches(/^[a-zA-Z0-9_]+$/)
-    .withMessage("Name can only contain letters, numbers, and underscores"),
-
+    .matches(/^[a-zA-Z0-9_]+(?: [a-zA-Z0-9_]+)*$/)
+    .withMessage("Name can only contain letters, numbers, and underscores")
+    .custom((value: string) => {
+      // Ensure no consecutive spaces
+      if (/\s{2,}/.test(value)) {
+        throw new Error("Name cannot contain consecutive spaces");
+      }
+      return true;
+    })
+    .custom((value: string) => {
+      // Ensure name doesn't start or end with space (though trim() already handles this)
+      if (value.startsWith(" ") || value.endsWith(" ")) {
+        throw new Error("Name cannot start or end with a space");
+      }
+      return true;
+    }),
   body("email")
     .trim()
     .notEmpty()

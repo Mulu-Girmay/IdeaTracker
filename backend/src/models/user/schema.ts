@@ -72,8 +72,6 @@ const UserSchema = new Schema<IUser>(
   },
 );
 
-UserSchema.index({ email: 1 });
-UserSchema.index({ name: 1 });
 UserSchema.index({ resetPasswordToken: 1 }, { sparse: true });
 UserSchema.index({ isActive: 1 });
 UserSchema.index({ role: 1 });
