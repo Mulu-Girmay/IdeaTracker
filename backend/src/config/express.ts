@@ -4,46 +4,29 @@ import morgan from "morgan";
 import helmet from "helmet";
 import { logger, stream } from "./winston.js";
 import config from "./environments.js";
-import "../config/passport.js";
-
-interface RequestLog {
-  method: string;
-  path: string;
-  ip: string | undefined;
-  userAgent: string | undefined;
-}
+import "../config/passport/passport.js";
+import userRoutes from "../routes/user.routes.js";
+import ideaRoutes from "../routes/idea.routes.js";
+import { notFound, errorHandler } from "../controllers/middleware.js";
 
 const buildApp = async (): Promise<Application> => {
   const app: Application = express();
 
   app.use(helmet());
-
-  app.use(
-    cors({
-      origin: config.cors.origin,
-      credentials: config.cors.credentials,
-    }),
-  );
-
+  app.use(cors({ origin: config.cors.origin, credentials: config.cors.credentials }));
   app.use(morgan("combined", { stream }));
-
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
 
   if (config.server.isDevelopment) {
     app.use((req: Request, res: Response, next: NextFunction) => {
-      const logData: RequestLog = {
-        method: req.method,
-        path: req.path,
-        ip: req.ip,
-        userAgent: req.get("user-agent"),
-      };
-      logger.debug(`${req.method} ${req.path}`, logData);
+      logger.debug(`${req.method} ${req.path}`, { ip: req.ip, userAgent: req.get("user-agent") });
       next();
     });
   }
 
-  app.get("/health", (req: Request, res: Response) => {
+  // Health check
+  app.get("/health", (_req: Request, res: Response) => {
     res.json({
       status: "UP",
       timestamp: new Date().toISOString(),
@@ -52,6 +35,14 @@ const buildApp = async (): Promise<Application> => {
       nodeVersion: process.version,
     });
   });
+
+  // Routes
+  app.use("/api/users", userRoutes);
+  app.use("/api/ideas", ideaRoutes);
+
+  // 404 + Error handler — must be last
+  app.use(notFound);
+  app.use(errorHandler);
 
   return app;
 };

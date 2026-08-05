@@ -1,8 +1,20 @@
 import { Request, Response, NextFunction } from "express";
+import { validationResult, ValidationChain } from "express-validator";
 import passport from "../config/passport/passport.js";
 import { logger } from "../config/winston.js";
 import { AppError } from "../error/AppError.js";
 import { IUser, UserRole } from "../models/user/types.js";
+import { Types } from "mongoose";
+
+declare global {
+  namespace Express {
+    interface Request {
+      user?: IUser;
+      userId?: Types.ObjectId | string;
+      resource?: any;
+    }
+  }
+}
 
 export const authenticate = (
   req: Request,
@@ -14,16 +26,36 @@ export const authenticate = (
     { session: false },
     (err: Error | null, user: IUser | false, info: any) => {
       if (err) {
-        logger.error("Authentication error:", err);
-        return next(err);
+        logger.error("Authentication error:", {
+          error: err.message,
+          stack: err.stack,
+          path: req.path,
+        });
+        return next(new AppError("Authentication failed", { statusCode: 500 }));
       }
 
       if (!user) {
-        res.status(401).json({
+        return res.status(401).json({
           success: false,
           message: info?.message || "Authentication required",
+          code: "UNAUTHORIZED",
         });
-        return;
+      }
+
+      if (user.isActive === false) {
+        return res.status(401).json({
+          success: false,
+          message: "Account is deactivated. Please contact support.",
+          code: "ACCOUNT_DEACTIVATED",
+        });
+      }
+
+      if (user.isAccountLocked && user.isAccountLocked()) {
+        return res.status(401).json({
+          success: false,
+          message: "Account is temporarily locked. Please try again later.",
+          code: "ACCOUNT_LOCKED",
+        });
       }
 
       req.user = user;
@@ -33,17 +65,37 @@ export const authenticate = (
   )(req, res, next);
 };
 
-// ================= Role Authorization =================
-
+/**
+ * Role-based authorization middleware
+ * @param roles - Array of allowed roles
+ */
 export const authorize =
   (...roles: UserRole[]) =>
   (req: Request, res: Response, next: NextFunction): void => {
     const user = req.user as IUser;
 
-    if (!user || !roles.includes(user.role)) {
+    if (!user) {
+      res.status(401).json({
+        success: false,
+        message: "Authentication required",
+        code: "UNAUTHORIZED",
+      });
+      return;
+    }
+
+    if (!roles.includes(user.role)) {
+      logger.warn("Authorization failed", {
+        userId: user._id,
+        userRole: user.role,
+        requiredRoles: roles,
+        path: req.path,
+      });
+
       res.status(403).json({
         success: false,
         message: "You do not have permission to perform this action",
+        code: "FORBIDDEN",
+        requiredRoles: roles,
       });
       return;
     }
@@ -51,14 +103,42 @@ export const authorize =
     next();
   };
 
-export const checkOwnership =
-  (model: any, ownerField: string = "owner") =>
-  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+/**
+ * Check if the authenticated user owns the resource
+ * @param model - Mongoose model
+ * @param ownerField - Field name that stores the owner ID (default: "owner")
+ * @param idParam - Parameter name for the resource ID (default: "id")
+ */
+export const checkOwnership = (
+  model: any,
+  ownerField: string = "owner",
+  idParam: string = "id",
+) => {
+  return async (
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> => {
     try {
-      const resource = await model.findById(req.params.id);
+      const resourceId = req.params[idParam];
+
+      if (!resourceId) {
+        res.status(400).json({
+          success: false,
+          message: "Resource ID is required",
+          code: "MISSING_RESOURCE_ID",
+        });
+        return;
+      }
+
+      const resource = await model.findById(resourceId);
 
       if (!resource) {
-        res.status(404).json({ success: false, message: "Resource not found" });
+        res.status(404).json({
+          success: false,
+          message: "Resource not found",
+          code: "RESOURCE_NOT_FOUND",
+        });
         return;
       }
 
@@ -66,9 +146,19 @@ export const checkOwnership =
       const requesterId = req.userId?.toString();
 
       if (ownerId !== requesterId) {
+        const user = req.user as IUser;
+        if (user && user.role === UserRole.ADMIN) {
+          req.resource = resource;
+          next();
+          return;
+        }
+
         res.status(403).json({
           success: false,
           message: "You are not authorized to modify this resource",
+          code: "NOT_OWNER",
+          ownerId,
+          requesterId,
         });
         return;
       }
@@ -76,14 +166,84 @@ export const checkOwnership =
       req.resource = resource;
       next();
     } catch (error) {
-      next(error);
+      logger.error("Error in checkOwnership middleware:", { error });
+      next(new AppError("Error checking resource ownership", { statusCode: 500 }));
     }
+  };
+};
+
+export const optionalAuthenticate = (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): void => {
+  passport.authenticate(
+    "jwt",
+    { session: false },
+    (err: Error | null, user: IUser | false, info: any) => {
+      if (err) {
+        logger.error("Optional authentication error:", { error: err.message });
+        // Continue without user
+        return next();
+      }
+
+      if (user && user.isActive !== false) {
+        req.user = user;
+        req.userId = user._id;
+      }
+
+      next();
+    },
+  )(req, res, next);
+};
+
+/**
+ * Combined middleware for checking both authentication and specific permissions
+ * @param roles - Allowed roles
+ * @param checkOwnership - Whether to check ownership
+ * @param model - Model for ownership check
+ * @param ownerField - Owner field name
+ */
+export const requirePermission = (
+  roles: UserRole[] = [],
+  options: {
+    checkOwnership?: boolean;
+    model?: any;
+    ownerField?: string;
+    idParam?: string;
+  } = {},
+) => {
+  return [
+    authenticate,
+    ...(roles.length > 0 ? [authorize(...roles)] : []),
+    ...(options.checkOwnership && options.model
+      ? [checkOwnership(options.model, options.ownerField, options.idParam)]
+      : []),
+  ];
+};
+
+export const validateRequest = (
+  validations: ValidationChain[],
+) =>
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    await Promise.all(validations.map((v) => v.run(req)));
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      res.status(400).json({
+        success: false,
+        message: "Validation failed",
+        details: errors.array().map((e) => ({ field: (e as any).path, message: e.msg })),
+      });
+      return;
+    }
+    next();
   };
 
 export const notFound = (req: Request, res: Response): void => {
   res.status(404).json({
     success: false,
     message: `Route ${req.method} ${req.originalUrl} not found`,
+    code: "ROUTE_NOT_FOUND",
   });
 };
 
@@ -93,12 +253,14 @@ export const errorHandler = (
   res: Response,
   _next: NextFunction,
 ): void => {
-  logger.error("Error:", {
+  logger.error("Error occurred:", {
     message: err.message,
     stack: err.stack,
     path: req.path,
     method: req.method,
     userId: req.userId,
+    ip: req.ip,
+    userAgent: req.get("user-agent"),
   });
 
   if (err instanceof AppError) {
@@ -107,34 +269,144 @@ export const errorHandler = (
   }
 
   if (err.name === "ValidationError") {
-    const details = Object.values(err.errors).map((e: any) => e.message);
-    res
-      .status(400)
-      .json({ success: false, message: "Validation failed", details });
+    const details = Object.values(err.errors).map((e: any) => ({
+      field: e.path,
+      message: e.message,
+      value: e.value,
+    }));
+    res.status(400).json({
+      success: false,
+      message: "Validation failed",
+      code: "VALIDATION_ERROR",
+      details,
+    });
     return;
   }
 
   if (err.code === 11000) {
     const field = Object.keys(err.keyValue || {})[0] ?? "field";
-    res
-      .status(409)
-      .json({ success: false, message: `${field} already exists` });
+    const value = err.keyValue?.[field] || "";
+    res.status(409).json({
+      success: false,
+      message: `${field} already exists`,
+      code: "DUPLICATE_KEY",
+      field,
+      value,
+    });
     return;
   }
 
   if (err.name === "JsonWebTokenError") {
-    res.status(401).json({ success: false, message: "Invalid token" });
+    res.status(401).json({
+      success: false,
+      message: "Invalid token",
+      code: "INVALID_TOKEN",
+    });
     return;
   }
 
   if (err.name === "TokenExpiredError") {
-    res.status(401).json({ success: false, message: "Token expired" });
+    res.status(401).json({
+      success: false,
+      message: "Token expired",
+      code: "TOKEN_EXPIRED",
+      expiredAt: err.expiredAt,
+    });
     return;
   }
 
+  if (err.name === "MulterError") {
+    const messages: Record<string, string> = {
+      LIMIT_FILE_SIZE: "File too large",
+      LIMIT_FILE_COUNT: "Too many files",
+      LIMIT_FIELD_KEY: "Invalid field name",
+      LIMIT_FIELD_VALUE: "Invalid field value",
+      LIMIT_FIELD_COUNT: "Too many fields",
+      LIMIT_PART_COUNT: "Too many parts",
+    };
+    res.status(400).json({
+      success: false,
+      message: messages[err.code] || "File upload error",
+      code: err.code,
+    });
+    return;
+  }
+
+  if (err.name === "RateLimitError") {
+    res.status(429).json({
+      success: false,
+      message: "Too many requests, please try again later",
+      code: "RATE_LIMIT_EXCEEDED",
+      retryAfter: err.retryAfter,
+    });
+    return;
+  }
+
+  const isDevelopment = process.env.NODE_ENV === "development";
   res.status(500).json({
     success: false,
-    message: "Internal Server Error",
-    ...(process.env.NODE_ENV === "development" && { stack: err.stack }),
+    message: isDevelopment ? err.message : "Internal Server Error",
+    code: "INTERNAL_SERVER_ERROR",
+    ...(isDevelopment && { stack: err.stack }),
+    ...(isDevelopment && { details: err }),
   });
+};
+
+export const requestLogger = (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): void => {
+  const startTime = Date.now();
+
+  logger.info(`Incoming request`, {
+    method: req.method,
+    path: req.path,
+    query: req.query,
+    ip: req.ip,
+    userAgent: req.get("user-agent"),
+    userId: req.userId,
+  });
+
+  res.on("finish", () => {
+    const duration = Date.now() - startTime;
+    const statusCode = res.statusCode;
+    const logLevel =
+      statusCode >= 400 ? "error" : statusCode >= 300 ? "warn" : "info";
+
+    logger[logLevel](`Request completed`, {
+      method: req.method,
+      path: req.path,
+      statusCode,
+      duration: `${duration}ms`,
+      userId: req.userId,
+    });
+  });
+
+  next();
+};
+
+export const csrfProtection = (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): void => {
+  const safeMethods = ["GET", "HEAD", "OPTIONS"];
+  if (safeMethods.includes(req.method)) {
+    return next();
+  }
+
+  const csrfToken = req.headers["x-csrf-token"] || req.body._csrf;
+  const sessionToken = req.session?.csrfToken;
+
+  if (!csrfToken || csrfToken !== sessionToken) {
+    res.status(403).json({
+      success: false,
+      message: "Invalid CSRF token",
+      code: "CSRF_INVALID",
+    });
+    return;
+  }
+
+  next();
 };

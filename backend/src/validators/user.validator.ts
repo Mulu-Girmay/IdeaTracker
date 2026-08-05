@@ -1,77 +1,133 @@
-import { body } from "express-validator";
+// validation.ts
+import { body, param, query } from "express-validator";
+import { UserRole } from "../models/user/types.js";
 
-const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+export const registerValidation = [
+  body("name")
+    .trim()
+    .notEmpty()
+    .withMessage("Name is required")
+    .isLength({ min: 3, max: 30 })
+    .withMessage("Name must be between 3 and 30 characters")
+    .matches(/^[a-zA-Z0-9_]+$/)
+    .withMessage("Name can only contain letters, numbers, and underscores"),
 
-const userValidators = {
-  register: [
-    body("name")
-      .trim()
-      .isLength({ min: 3, max: 30 })
-      .withMessage("Username must be between 3 and 30 characters")
-      .matches(/^[a-zA-Z0-9_]+$/)
-      .withMessage("Username can only contain letters, numbers, and underscores"),
+  body("email")
+    .trim()
+    .notEmpty()
+    .withMessage("Email is required")
+    .isEmail()
+    .withMessage("Please provide a valid email address")
+    .normalizeEmail(),
 
-    body("email")
-      .trim()
-      .isEmail()
-      .withMessage("Please provide a valid email address")
-      .normalizeEmail(),
+  body("password")
+    .notEmpty()
+    .withMessage("Password is required")
+    .isLength({ min: 6 })
+    .withMessage("Password must be at least 6 characters"),
 
-    body("password")
-      .matches(PASSWORD_REGEX)
-      .withMessage("Password must be at least 8 characters and include uppercase, lowercase, number, and special character"),
-  ],
+  body("role")
+    .optional()
+    .isIn(Object.values(UserRole))
+    .withMessage(`Role must be one of: ${Object.values(UserRole).join(", ")}`),
+];
 
-  login: [
-    body("email")
-      .trim()
-      .isEmail()
-      .withMessage("Please provide a valid email address")
-      .normalizeEmail(),
+export const loginValidation = [
+  body("email")
+    .trim()
+    .notEmpty()
+    .withMessage("Email is required")
+    .isEmail()
+    .withMessage("Please provide a valid email address")
+    .normalizeEmail(),
 
-    body("password").notEmpty().withMessage("Password is required"),
-  ],
+  body("password").notEmpty().withMessage("Password is required"),
+];
 
-  updateProfile: [
-    body("name")
-      .optional()
-      .trim()
-      .isLength({ min: 3, max: 30 })
-      .withMessage("Username must be between 3 and 30 characters")
-      .matches(/^[a-zA-Z0-9_]+$/)
-      .withMessage("Username can only contain letters, numbers, and underscores"),
+export const updateProfileValidation = [
+  body("name")
+    .optional()
+    .trim()
+    .isLength({ min: 3, max: 30 })
+    .withMessage("Name must be between 3 and 30 characters")
+    .matches(/^[a-zA-Z0-9_]+$/)
+    .withMessage("Name can only contain letters, numbers, and underscores"),
 
-    body("email")
-      .optional()
-      .trim()
-      .isEmail()
-      .withMessage("Please provide a valid email address")
-      .normalizeEmail(),
-  ],
+  body("email")
+    .optional()
+    .trim()
+    .isEmail()
+    .withMessage("Please provide a valid email address")
+    .normalizeEmail(),
+];
 
-  changePassword: [
-    body("currentPassword").notEmpty().withMessage("Current password is required"),
+export const changePasswordValidation = [
+  body("currentPassword")
+    .notEmpty()
+    .withMessage("Current password is required"),
 
-    body("newPassword")
-      .matches(PASSWORD_REGEX)
-      .withMessage("Password must be at least 8 characters and include uppercase, lowercase, number, and special character"),
-  ],
+  body("newPassword")
+    .notEmpty()
+    .withMessage("New password is required")
+    .isLength({ min: 6 })
+    .withMessage("New password must be at least 6 characters"),
+];
 
-  forgotPassword: [
-    body("email")
-      .trim()
-      .isEmail()
-      .withMessage("Please provide a valid email address")
-      .normalizeEmail(),
-  ],
+export const forgotPasswordValidation = [
+  body("email")
+    .trim()
+    .notEmpty()
+    .withMessage("Email is required")
+    .isEmail()
+    .withMessage("Please provide a valid email address")
+    .normalizeEmail(),
+];
 
-  resetPassword: [
-    body("token").notEmpty().withMessage("Reset token is required"),
+export const resetPasswordValidation = [
+  body("token").notEmpty().withMessage("Reset token is required"),
 
-    body("newPassword")
-      .matches(PASSWORD_REGEX)
-      .withMessage("Password must be at least 8 characters and include uppercase, lowercase, number, and special character"),
-  ],
-};
+  body("newPassword")
+    .notEmpty()
+    .withMessage("New password is required")
+    .isLength({ min: 6 })
+    .withMessage("Password must be at least 6 characters"),
+];
 
-export default userValidators;
+export const updateUserValidation = [
+  param("id")
+    .notEmpty()
+    .withMessage("User ID is required")
+    .isMongoId()
+    .withMessage("Invalid user ID format"),
+
+  body("name")
+    .optional()
+    .trim()
+    .isLength({ min: 3, max: 30 })
+    .withMessage("Name must be between 3 and 30 characters")
+    .matches(/^[a-zA-Z0-9_]+$/)
+    .withMessage("Name can only contain letters, numbers, and underscores"),
+
+  body("email")
+    .optional()
+    .trim()
+    .isEmail()
+    .withMessage("Please provide a valid email address")
+    .normalizeEmail(),
+
+  body("role")
+    .optional()
+    .isIn(Object.values(UserRole))
+    .withMessage(`Role must be one of: ${Object.values(UserRole).join(", ")}`),
+
+  body("isActive")
+    .optional()
+    .isBoolean()
+    .withMessage("isActive must be a boolean"),
+];
+
+export const getUserStatsValidation = [
+  query("startDate").optional().isISO8601().withMessage("Invalid date format"),
+
+  query("endDate").optional().isISO8601().withMessage("Invalid date format"),
+];
