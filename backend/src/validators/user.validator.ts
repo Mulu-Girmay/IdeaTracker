@@ -1,16 +1,15 @@
-const { body } = require("express-validator");
-const { PASSWORD_REGEX } = require("../utils/constants");
+import { body } from "express-validator";
+
+const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
 
 const userValidators = {
   register: [
     body("name")
       .trim()
       .isLength({ min: 3, max: 30 })
-      .withMessage("Username must be between 3 and 10 characters")
+      .withMessage("Username must be between 3 and 30 characters")
       .matches(/^[a-zA-Z0-9_]+$/)
-      .withMessage(
-        "Username can only contain letters, numbers, and underscores",
-      ),
+      .withMessage("Username can only contain letters, numbers, and underscores"),
 
     body("email")
       .trim()
@@ -20,9 +19,7 @@ const userValidators = {
 
     body("password")
       .matches(PASSWORD_REGEX)
-      .withMessage(
-        "Password must be at least 8 characters and include uppercase, lowercase, number, and special character",
-      ),
+      .withMessage("Password must be at least 8 characters and include uppercase, lowercase, number, and special character"),
   ],
 
   login: [
@@ -40,11 +37,9 @@ const userValidators = {
       .optional()
       .trim()
       .isLength({ min: 3, max: 30 })
-      .withMessage("name must be between 3 and 10 characters")
+      .withMessage("Username must be between 3 and 30 characters")
       .matches(/^[a-zA-Z0-9_]+$/)
-      .withMessage(
-        "Username can only contain letters, numbers, and underscores",
-      ),
+      .withMessage("Username can only contain letters, numbers, and underscores"),
 
     body("email")
       .optional()
@@ -55,15 +50,11 @@ const userValidators = {
   ],
 
   changePassword: [
-    body("currentPassword")
-      .notEmpty()
-      .withMessage("Current password is required"),
+    body("currentPassword").notEmpty().withMessage("Current password is required"),
 
     body("newPassword")
       .matches(PASSWORD_REGEX)
-      .withMessage(
-        "Password must be at least 8 characters and include uppercase, lowercase, number, and special character",
-      ),
+      .withMessage("Password must be at least 8 characters and include uppercase, lowercase, number, and special character"),
   ],
 
   forgotPassword: [
@@ -79,10 +70,8 @@ const userValidators = {
 
     body("newPassword")
       .matches(PASSWORD_REGEX)
-      .withMessage(
-        "Password must be at least 8 characters and include uppercase, lowercase, number, and special character",
-      ),
+      .withMessage("Password must be at least 8 characters and include uppercase, lowercase, number, and special character"),
   ],
 };
 
-module.exports = userValidators;
+export default userValidators;

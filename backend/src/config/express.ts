@@ -4,6 +4,7 @@ import morgan from "morgan";
 import helmet from "helmet";
 import { logger, stream } from "./winston.js";
 import config from "./environments.js";
+import "../config/passport.js";
 
 interface RequestLog {
   method: string;

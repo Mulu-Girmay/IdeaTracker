@@ -1,8 +1,10 @@
 import mongoose, { Schema } from "mongoose";
-import bcrypt from "bcryptjs";
-import { IUser, UserRole } from "./types";
-import { logger } from "../../config/winston";
+import { IUser, IUserModel, UserRole } from "./types.js";
+import { logger } from "../../config/winston.js";
 import userMethods from "./method.js";
+import userStatics from "./statics.js";
+import bcrypt from "bcryptjs";
+
 const UserSchema = new Schema<IUser>(
   {
     name: {
@@ -43,7 +45,6 @@ const UserSchema = new Schema<IUser>(
       type: Boolean,
       default: true,
     },
-
     resetPasswordToken: {
       type: String,
       select: false,
@@ -77,7 +78,11 @@ UserSchema.index({ resetPasswordToken: 1 }, { sparse: true });
 UserSchema.index({ isActive: 1 });
 UserSchema.index({ role: 1 });
 
-UserSchema.pre("save", async function (this: IUser) {
+UserSchema.virtual("isLocked").get(function (this: IUser): boolean {
+  return !!(this.lockUntil && this.lockUntil > new Date());
+});
+
+UserSchema.pre("save", async function (this: IUser, next) {
   if (!this.isModified("password")) return;
   try {
     const salt = await bcrypt.genSalt(12);
@@ -86,10 +91,10 @@ UserSchema.pre("save", async function (this: IUser) {
     logger.error("Error hashing password", { error });
   }
 });
-UserSchema.methods = {
-  ...UserSchema.methods,
-  ...userMethods,
-} as any;
-const User = mongoose.model<IUser>("User", UserSchema);
+
+UserSchema.methods = { ...UserSchema.methods, ...userMethods } as any;
+UserSchema.statics = { ...UserSchema.statics, ...userStatics } as any;
+
+const User = mongoose.model<IUser, IUserModel>("User", UserSchema);
 
 export default User;

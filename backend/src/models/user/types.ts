@@ -1,5 +1,4 @@
-// src/models/types/user.types.ts
-import { Document, Types } from "mongoose";
+import { Document, Model, Types } from "mongoose";
 
 export enum UserRole {
   USER = "user",
@@ -7,7 +6,7 @@ export enum UserRole {
 }
 
 export interface IUser extends Document {
-  // Fields
+  _id: Types.ObjectId;
   name: string;
   email: string;
   password: string;
@@ -18,9 +17,10 @@ export interface IUser extends Document {
   lastLogin?: Date;
   loginAttempts: number;
   lockUntil?: Date;
+
   createdAt: Date;
   updatedAt: Date;
-  fullName: string;
+
   isLocked: boolean;
 
   comparePassword(candidatePassword: string): Promise<boolean>;
@@ -32,6 +32,56 @@ export interface IUser extends Document {
   isAccountLocked(): boolean;
   incrementLoginAttempts(): Promise<void>;
   resetLoginAttempts(): Promise<void>;
+}
+
+export interface IUserModel extends Model<IUser> {
+  createUser(userData: CreateUserData): Promise<IUser>;
+  authenticateUser(email: string, password: string): Promise<IUser>;
+  findByEmail(email: string): Promise<IUser | null>;
+  findByEmailWithPassword(email: string): Promise<IUser | null>;
+  findUserById(id: string): Promise<IUser | null>;
+  updateUser(userId: string, updateData: UpdateUserData): Promise<IUser>;
+  resetPassword(token: string, newPassword: string): Promise<IUser>;
+  changePassword(
+    userId: string,
+    currentPassword: string,
+    newPassword: string,
+  ): Promise<IUser>;
+  getUsers(
+    page: number,
+    limit: number,
+    filter?: any,
+  ): Promise<{
+    users: IUser[];
+    total: number;
+    page: number;
+    totalPages: number;
+  }>;
+  softDeleteUser(userId: string): Promise<IUser>;
+  activateUser(userId: string): Promise<IUser>;
+  getUserStats(): Promise<{
+    total: number;
+    active: number;
+    inactive: number;
+    admins: number;
+    users: number;
+  }>;
+}
+
+export interface CreateUserData {
+  name: string;
+  email: string;
+  password: string;
+  role?: UserRole;
+  isActive?: boolean;
+}
+
+export interface UpdateUserData {
+  name?: string;
+  email?: string;
+  password?: string;
+  isActive?: boolean;
+  role?: UserRole;
 }
 
 export interface IUserMethods {
