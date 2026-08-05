@@ -82,7 +82,7 @@ const { error, value: envVars } = envSchema.validate(process.env, {
 if (error) {
   console.error("Config validation error: ", error.message);
   error.details.forEach((d) => {
-    console.error(`{d.message}`);
+    console.error(`${d.message}`);
   });
   process.exit(1);
 }
