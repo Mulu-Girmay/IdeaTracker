@@ -7,10 +7,10 @@ import config from "./environments.js";
 import "../config/passport/passport.js";
 import Routes from "../config/routes.js";
 import { notFound, errorHandler } from "../controllers/middleware.js";
-
+import cookieParser from "cookie-parser";
 const buildApp = async (): Promise<Application> => {
   const app: Application = express();
-
+  app.use(cookieParser()); // MUST be used to parse incoming cookies
   app.use(helmet());
   app.use(
     cors({ origin: config.cors.origin, credentials: config.cors.credentials }),

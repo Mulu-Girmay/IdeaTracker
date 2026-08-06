@@ -37,6 +37,11 @@ export const register = async (
     const user = await User.createUser(userData);
     const token = user.generateAuthToken();
     const refreshToken = user.generateRefreshToken();
+    res.cookie("refreshToken", refreshToken, {
+      httpOnly: true,
+      secure: true,
+      sameSite: "strict",
+    });
 
     res.status(201).json({
       success: true,
@@ -44,7 +49,6 @@ export const register = async (
       data: {
         user: user.getPublicProfile(),
         token,
-        refreshToken,
       },
     });
   } catch (error) {
@@ -71,14 +75,17 @@ export const login = async (
 
     const token = user.generateAuthToken();
     const refreshToken = user.generateRefreshToken();
-
+    res.cookie("refreshToken", refreshToken, {
+      httpOnly: true,
+      secure: true,
+      sameSite: "strict",
+    });
     res.status(200).json({
       success: true,
       message: "Login successful",
       data: {
         user: user.getPublicProfile(),
         token,
-        refreshToken,
       },
     });
   } catch (error) {
@@ -93,7 +100,7 @@ export const refreshToken = async (
   next: NextFunction,
 ): Promise<void> => {
   try {
-    const { refreshToken } = req.body;
+    const refreshToken = req.cookies.refreshToken;
 
     if (!refreshToken) {
       throw new BadRequestError("Refresh token is required");
@@ -109,12 +116,16 @@ export const refreshToken = async (
     const newToken = user.generateAuthToken();
     const newRefreshToken = user.generateRefreshToken();
 
+    res.cookie("refreshToken", newRefreshToken, {
+      httpOnly: true,
+      secure: true,
+      sameSite: "strict",
+    });
+
     res.status(200).json({
       success: true,
-      data: {
-        token: newToken,
-        refreshToken: newRefreshToken,
-      },
+
+      token: newToken,
     });
   } catch (error) {
     logger.error("Error in refreshToken controller", { error });
@@ -429,6 +440,7 @@ export const logout = async (
   next: NextFunction,
 ): Promise<void> => {
   try {
+    res.clearCookie("refreshToken");
     res.status(200).json({
       success: true,
       message: "Logged out successfully",

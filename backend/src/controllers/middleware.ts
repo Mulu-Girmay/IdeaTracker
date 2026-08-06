@@ -38,6 +38,13 @@ export const authenticate = (
           code: "ACCOUNT_DEACTIVATED",
         });
       }
+      if (info?.name === "TokenExpiredError") {
+        return res.status(401).json({
+          success: false,
+          message: "Access token expired",
+          code: "TOKEN_EXPIRED",
+        });
+      }
 
       if (user.isAccountLocked && user.isAccountLocked()) {
         return res.status(401).json({
