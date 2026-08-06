@@ -110,20 +110,27 @@ export const getIdeaById = async (
   next: NextFunction,
 ): Promise<void> => {
   try {
-    const idea = await Idea.findById(req.params.id).populate(
-      "owner",
-      "name email",
-    );
-    if (!idea) throw new NotFoundError("Idea not found");
+    const idea = await Idea.findById(req.params.id);
+
+    if (!idea) {
+      throw new NotFoundError("Idea not found");
+    }
 
     const user = req.user as IUser;
-    const isOwner = idea.owner.toString() === req.userId?.toString();
+
+    const isOwner = idea.owner.equals(req.userId);
     const isAdmin = user.role === UserRole.ADMIN;
 
-    if (!isOwner && !isAdmin)
+    if (!isOwner && !isAdmin) {
       throw new ForbiddenError("You do not have access to this idea");
+    }
 
-    res.status(200).json({ success: true, data: idea });
+    await idea.populate("owner", "name email"); // Mongoose replaces the ObjectId with the actual user document.
+
+    res.status(200).json({
+      success: true,
+      data: idea,
+    });
   } catch (error) {
     logger.error("Error in getIdeaById controller", { error });
     next(error);
