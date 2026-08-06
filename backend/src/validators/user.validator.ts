@@ -11,14 +11,12 @@ export const registerValidation = [
     .matches(/^[a-zA-Z0-9_]+(?: [a-zA-Z0-9_]+)*$/)
     .withMessage("Name can only contain letters, numbers, and underscores")
     .custom((value: string) => {
-      // Ensure no consecutive spaces
       if (/\s{2,}/.test(value)) {
         throw new Error("Name cannot contain consecutive spaces");
       }
       return true;
     })
     .custom((value: string) => {
-      // Ensure name doesn't start or end with space (though trim() already handles this)
       if (value.startsWith(" ") || value.endsWith(" ")) {
         throw new Error("Name cannot start or end with a space");
       }

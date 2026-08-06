@@ -11,24 +11,9 @@ import {
   forgotPasswordValidation,
   updateUserValidation,
 } from "../validators/user.validator.js";
-import { rateLimit } from "express-rate-limit";
 import { UserRole } from "../models/user/types.js";
-
+import { authLimiter, passwordResetLimiter } from "../utils/ratelimmiter.js";
 const router = express.Router();
-
-const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5,
-  message: "Too many authentication attempts, please try again later",
-  standardHeaders: true,
-  legacyHeaders: false,
-});
-
-const passwordResetLimiter = rateLimit({
-  windowMs: 60 * 60 * 1000, // 1 hour
-  max: 3, // 3 requests per hour
-  message: "Too many password reset attempts, please try again later",
-});
 
 router.post(
   "/register",
@@ -63,7 +48,7 @@ router.post(
 router.get("/me", authenticate, userController.getCurrentUser);
 
 router.put(
-  "/me",
+  "/updateMe",
   authenticate,
   validateRequest(updateProfileValidation),
   userController.updateProfile,
@@ -100,7 +85,7 @@ router.get(
 );
 
 router.put(
-  "/editUser:id",
+  "/editUser/:id",
   authenticate,
   authorize(UserRole.ADMIN),
   validateRequest(updateUserValidation),
@@ -115,7 +100,7 @@ router.delete(
 );
 
 router.post(
-  "/activateUser:id/activate",
+  "/activateUser/:id/activate",
   authenticate,
   authorize(UserRole.ADMIN),
   userController.activateUser,

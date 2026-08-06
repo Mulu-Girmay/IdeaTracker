@@ -122,9 +122,6 @@ export const refreshToken = async (
   }
 };
 
-/**
- * Get current user profile
- */
 export const getCurrentUser = async (
   req: Request,
   res: Response,
@@ -367,7 +364,6 @@ export const deleteUser = async (
   try {
     const { id } = req.params;
 
-    // Prevent self-deletion
     const currentUserId = req.userId?.toString();
     if (id === currentUserId) {
       throw new BadRequestError("You cannot deactivate your own account");

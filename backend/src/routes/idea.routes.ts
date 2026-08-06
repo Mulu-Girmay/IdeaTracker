@@ -24,31 +24,31 @@ router.post(
 );
 
 router.get(
-  "/my",
+  "/myIdea",
   validateRequest(getIdeasValidation),
   ideaController.getMyIdeas,
 );
 
 router.get(
-  "/view/:id",
+  "/viewIdea/:id",
   validateRequest(ideaIdValidation),
   ideaController.getIdeaById,
 );
 
 router.put(
-  "/update/:id",
+  "/updateIdea/:id",
   validateRequest(updateIdeaValidation),
   ideaController.updateIdea,
 );
 
 router.delete(
-  "/delete/:id",
+  "/deleteIdea/:id",
   validateRequest(ideaIdValidation),
   ideaController.deleteIdea,
 );
 
 router.get(
-  "/all",
+  "/allIdeas",
   authorize(UserRole.ADMIN),
   validateRequest(getIdeasValidation),
   ideaController.getAllIdeas,
