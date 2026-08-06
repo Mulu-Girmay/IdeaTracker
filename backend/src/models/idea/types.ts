@@ -20,7 +20,6 @@ export interface IIdea extends Document {
   description: string;
   status: IdeaStatus;
   category: IdeaCategory;
-  tags: string[];
   owner: Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
@@ -28,8 +27,7 @@ export interface IIdea extends Document {
   isOwnedBy(userId: string): boolean;
   publish(): Promise<IIdea>;
   archive(): Promise<IIdea>;
-  addTag(tag: string): Promise<IIdea>;
-  removeTag(tag: string): Promise<IIdea>;
+
 }
 
 export interface IIdeaModel extends Model<IIdea> {
@@ -49,7 +47,6 @@ export interface CreateIdeaData {
   description?: string;
   status?: IdeaStatus;
   category?: IdeaCategory;
-  tags?: string[];
   owner: Types.ObjectId;
 }
 
@@ -58,5 +55,4 @@ export interface UpdateIdeaData {
   description?: string;
   status?: IdeaStatus;
   category?: IdeaCategory;
-  tags?: string[];
 }

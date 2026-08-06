@@ -28,10 +28,6 @@ const IdeaSchema = new Schema<IIdea>(
       enum: Object.values(IdeaCategory),
       default: IdeaCategory.OTHER,
     },
-    tags: {
-      type: [String],
-      default: [],
-    },
     owner: {
       type: Schema.Types.ObjectId,
       ref: "User",
@@ -48,7 +44,6 @@ const IdeaSchema = new Schema<IIdea>(
 IdeaSchema.index({ owner: 1 });
 IdeaSchema.index({ status: 1 });
 IdeaSchema.index({ category: 1 });
-IdeaSchema.index({ tags: 1 });
 IdeaSchema.index({ title: "text", description: "text" });
 
 IdeaSchema.statics = { ...IdeaSchema.statics, ...ideaStatics } as any;

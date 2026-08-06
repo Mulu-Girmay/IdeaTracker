@@ -14,25 +14,10 @@ export const archive = async function (this: IIdea): Promise<IIdea> {
   return this.save();
 };
 
-export const addTag = async function (this: IIdea, tag: string): Promise<IIdea> {
-  if (!this.tags.includes(tag)) {
-    this.tags.push(tag);
-    return this.save();
-  }
-  return this;
-};
-
-export const removeTag = async function (this: IIdea, tag: string): Promise<IIdea> {
-  this.tags = this.tags.filter((t) => t !== tag);
-  return this.save();
-};
-
 export const ideaMethods = {
   isOwnedBy,
   publish,
   archive,
-  addTag,
-  removeTag,
 };
 
 export default ideaMethods;

@@ -12,26 +12,23 @@ export const createIdea = async (
   next: NextFunction,
 ): Promise<void> => {
   try {
-    const { title, description, status, category, tags } = req.body;
+    const { title, description, status, category } = req.body;
 
     const data: CreateIdeaData = {
       title,
       description,
       status,
       category,
-      tags,
       owner: req.userId as Types.ObjectId,
     };
 
     const idea = await Idea.createIdea(data);
 
-    res
-      .status(201)
-      .json({
-        success: true,
-        message: "Idea created successfully",
-        data: idea,
-      });
+    res.status(201).json({
+      success: true,
+      message: "Idea created successfully",
+      data: idea,
+    });
   } catch (error) {
     logger.error("Error in createIdea controller", { error });
     next(error);
@@ -149,23 +146,20 @@ export const updateIdea = async (
     if (!isOwner && !isAdmin)
       throw new ForbiddenError("You are not authorized to update this idea");
 
-    const { title, description, status, category, tags } = req.body;
+    const { title, description, status, category } = req.body;
     const updateData: UpdateIdeaData = {};
     if (title !== undefined) updateData.title = title;
     if (description !== undefined) updateData.description = description;
     if (status !== undefined) updateData.status = status;
     if (category !== undefined) updateData.category = category;
-    if (tags !== undefined) updateData.tags = tags;
 
     const updated = await Idea.updateIdea(req.params.id as string, updateData);
 
-    res
-      .status(200)
-      .json({
-        success: true,
-        message: "Idea updated successfully",
-        data: updated,
-      });
+    res.status(200).json({
+      success: true,
+      message: "Idea updated successfully",
+      data: updated,
+    });
   } catch (error) {
     logger.error("Error in updateIdea controller", { error });
     next(error);

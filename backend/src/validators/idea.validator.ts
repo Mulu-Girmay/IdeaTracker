@@ -27,18 +27,6 @@ export const createIdeaValidation = [
     .optional()
     .isIn(VALID_CATEGORIES)
     .withMessage(`Category must be one of: ${VALID_CATEGORIES.join(", ")}`),
-
-  body("tags")
-    .optional()
-    .isArray({ max: 10 })
-    .withMessage("Tags must be an array with at most 10 items"),
-
-  body("tags.*")
-    .trim()
-    .isString()
-    .withMessage("Each tag must be a string")
-    .isLength({ min: 1, max: 30 })
-    .withMessage("Each tag must be between 1 and 30 characters"),
 ];
 
 export const updateIdeaValidation = [
@@ -65,18 +53,6 @@ export const updateIdeaValidation = [
     .optional()
     .isIn(VALID_CATEGORIES)
     .withMessage(`Category must be one of: ${VALID_CATEGORIES.join(", ")}`),
-
-  body("tags")
-    .optional()
-    .isArray({ max: 10 })
-    .withMessage("Tags must be an array with at most 10 items"),
-
-  body("tags.*")
-    .trim()
-    .isString()
-    .withMessage("Each tag must be a string")
-    .isLength({ min: 1, max: 30 })
-    .withMessage("Each tag must be between 1 and 30 characters"),
 ];
 
 export const ideaIdValidation = [
