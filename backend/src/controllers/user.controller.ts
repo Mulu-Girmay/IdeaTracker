@@ -37,6 +37,12 @@ export const register = async (
     const user = await User.createUser(userData);
     const token = user.generateAuthToken();
     const refreshToken = user.generateRefreshToken();
+
+    res.cookie("token", token, {
+      httpOnly: true,
+      secure: true,
+      sameSite: "strict",
+    });
     res.cookie("refreshToken", refreshToken, {
       httpOnly: true,
       secure: true,
@@ -75,6 +81,11 @@ export const login = async (
 
     const token = user.generateAuthToken();
     const refreshToken = user.generateRefreshToken();
+    res.cookie("token", token, {
+      httpOnly: true,
+      secure: true,
+      sameSite: "strict",
+    });
     res.cookie("refreshToken", refreshToken, {
       httpOnly: true,
       secure: true,
@@ -440,7 +451,11 @@ export const logout = async (
   next: NextFunction,
 ): Promise<void> => {
   try {
-    res.clearCookie("refreshToken");
+    res.clearCookie("refreshToken", {
+      httpOnly: true,
+      secure: true,
+      sameSite: "strict",
+    });
     res.status(200).json({
       success: true,
       message: "Logged out successfully",
