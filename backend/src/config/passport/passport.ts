@@ -11,7 +11,6 @@ const cookieExtractor = (req: Request) => {
   }
   return token;
 };
-
 const options: StrategyOptions = {
   jwtFromRequest: cookieExtractor,
   secretOrKey: config.jwt.secret,
