@@ -9,7 +9,9 @@ export const registerValidation = [
     .isLength({ min: 3, max: 30 })
     .withMessage("Name must be between 3 and 30 characters")
     .matches(/^[a-zA-Z0-9_]+(?: [a-zA-Z0-9_]+)*$/)
-    .withMessage("Name can only contain letters, numbers, and underscores")
+    .withMessage(
+      "Name can only contain letters, numbers, underscores, and single spaces",
+    )
     .custom((value: string) => {
       if (/\s{2,}/.test(value)) {
         throw new Error("Name cannot contain consecutive spaces");
@@ -33,8 +35,8 @@ export const registerValidation = [
   body("password")
     .notEmpty()
     .withMessage("Password is required")
-    .isLength({ min: 6 })
-    .withMessage("Password must be at least 6 characters"),
+    .isLength({ min: 8 })
+    .withMessage("Password must be at least 8 characters"),
 
   body("role")
     .optional()

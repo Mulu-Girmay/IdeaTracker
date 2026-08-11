@@ -1,6 +1,16 @@
 import crypto from "crypto";
-import { IUser, IUserModel, CreateUserData, UpdateUserData, UserRole } from "./types.js";
-import { UnauthorizedError, NotFoundError, BadRequestError } from "../../error/ApiError.js";
+import {
+  IUser,
+  IUserModel,
+  CreateUserData,
+  UpdateUserData,
+  UserRole,
+} from "./types.js";
+import {
+  UnauthorizedError,
+  NotFoundError,
+  BadRequestError,
+} from "../../error/ApiError.js";
 
 export const createUser = async function (
   this: IUserModel,
@@ -21,7 +31,9 @@ export const authenticateUser = async function (
   if (!user) throw new UnauthorizedError("Invalid email or password");
 
   if (user.isAccountLocked()) {
-    throw new UnauthorizedError("Account is temporarily locked. Please try again later.");
+    throw new UnauthorizedError(
+      "Account is temporarily locked. Please try again later.",
+    );
   }
 
   const isMatch = await user.comparePassword(password);
@@ -61,7 +73,12 @@ export const updateUser = async function (
   userId: string,
   updateData: UpdateUserData,
 ): Promise<IUser> {
-  const allowedFields: (keyof UpdateUserData)[] = ["name", "email", "isActive", "role"];
+  const allowedFields: (keyof UpdateUserData)[] = [
+    "name",
+    "email",
+    "isActive",
+    "role",
+  ];
   const filtered: Partial<UpdateUserData> = {};
 
   for (const key of allowedFields) {
@@ -73,11 +90,18 @@ export const updateUser = async function (
   }
 
   if (filtered.email) {
-    const existing = await this.findOne({ email: filtered.email, _id: { $ne: userId } });
-    if (existing) throw new BadRequestError("Email already in use by another account");
+    const existing = await this.findOne({
+      email: filtered.email,
+      _id: { $ne: userId },
+    });
+    if (existing)
+      throw new BadRequestError("Email already in use by another account");
   }
 
-  const user = await this.findByIdAndUpdate(userId, filtered, { new: true, runValidators: true });
+  const user = await this.findByIdAndUpdate(userId, filtered, {
+    new: true,
+    runValidators: true,
+  });
   if (!user) throw new NotFoundError("User not found");
   return user;
 };
@@ -115,6 +139,7 @@ export const changePassword = async function (
   if (!isMatch) throw new UnauthorizedError("Current password is incorrect");
 
   user.password = newPassword;
+  user.markModified("password");
   await user.save();
   return user;
 };
@@ -124,7 +149,12 @@ export const getUsers = async function (
   page: number = 1,
   limit: number = 10,
   filter: any = {},
-): Promise<{ users: IUser[]; total: number; page: number; totalPages: number }> {
+): Promise<{
+  users: IUser[];
+  total: number;
+  page: number;
+  totalPages: number;
+}> {
   const skip = (page - 1) * limit;
   const [users, total] = await Promise.all([
     this.find(filter).skip(skip).limit(limit).sort({ createdAt: -1 }),
@@ -137,7 +167,11 @@ export const softDeleteUser = async function (
   this: IUserModel,
   userId: string,
 ): Promise<IUser> {
-  const user = await this.findByIdAndUpdate(userId, { isActive: false }, { new: true });
+  const user = await this.findByIdAndUpdate(
+    userId,
+    { isActive: false },
+    { new: true },
+  );
   if (!user) throw new NotFoundError("User not found");
   return user;
 };
@@ -146,14 +180,22 @@ export const activateUser = async function (
   this: IUserModel,
   userId: string,
 ): Promise<IUser> {
-  const user = await this.findByIdAndUpdate(userId, { isActive: true }, { new: true });
+  const user = await this.findByIdAndUpdate(
+    userId,
+    { isActive: true },
+    { new: true },
+  );
   if (!user) throw new NotFoundError("User not found");
   return user;
 };
 
-export const getUserStats = async function (
-  this: IUserModel,
-): Promise<{ total: number; active: number; inactive: number; admins: number; users: number }> {
+export const getUserStats = async function (this: IUserModel): Promise<{
+  total: number;
+  active: number;
+  inactive: number;
+  admins: number;
+  users: number;
+}> {
   const [total, active, inactive, admins, users] = await Promise.all([
     this.countDocuments(),
     this.countDocuments({ isActive: true }),
