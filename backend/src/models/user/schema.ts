@@ -80,7 +80,7 @@ UserSchema.virtual("isLocked").get(function (this: IUser): boolean {
   return !!(this.lockUntil && this.lockUntil > new Date());
 });
 
-UserSchema.pre("save", async function (this: IUser, next) {
+UserSchema.pre("save", async function (this: IUser) {
   if (!this.isModified("password")) return;
   try {
     const salt = await bcrypt.genSalt(12);
