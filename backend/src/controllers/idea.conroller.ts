@@ -6,6 +6,9 @@ import { CreateIdeaData, UpdateIdeaData } from "../models/idea/types.js";
 import { IUser, UserRole } from "../models/user/types.js";
 import { Types } from "mongoose";
 
+const escapeRegex = (value: string): string =>
+  value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
 export const createIdea = async (
   req: Request,
   res: Response,
@@ -48,7 +51,13 @@ export const getAllIdeas = async (
     const filter: Record<string, any> = {};
     if (status) filter.status = status;
     if (category) filter.category = category;
-    if (search) filter.$text = { $search: search as string };
+    if (search) {
+      const safeSearch = escapeRegex(search as string);
+      filter.$or = [
+        { title: { $regex: safeSearch, $options: "i" } },
+        { description: { $regex: safeSearch, $options: "i" } },
+      ];
+    }
 
     const result = await Idea.getIdeas(page, limit, filter);
 
