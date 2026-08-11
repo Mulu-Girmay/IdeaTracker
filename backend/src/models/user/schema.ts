@@ -15,8 +15,8 @@ const UserSchema = new Schema<IUser>(
       minlength: [3, "Username must be at least 3 characters"],
       maxlength: [30, "Username cannot exceed 30 characters"],
       match: [
-        /^[a-zA-Z0-9_]+$/,
-        "Username can only contain letters, numbers, and underscores",
+        /^[a-zA-Z0-9_]+(?: [a-zA-Z0-9_]+)*$/,
+        "Username can only contain letters, numbers, underscores, and single spaces between words",
       ],
     },
     email: {
